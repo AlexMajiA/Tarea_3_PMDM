@@ -8,8 +8,8 @@
 
     <Button
         android:id="@+id/btnReproducir"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="152dp"
+        android:layout_height="51dp"
         android:layout_marginStart="41dp"
         android:layout_marginTop="36dp"
         android:text="Reproducir"
@@ -17,21 +17,9 @@
         app:layout_constraintTop_toBottomOf="@+id/seekBar" />
 
     <Button
-        android:id="@+id/btnPausa"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="36dp"
-        android:text="Pausa"
-        app:layout_constraintEnd_toStartOf="@+id/btnParar"
-        app:layout_constraintHorizontal_bias="0.259"
-        app:layout_constraintStart_toEndOf="@+id/btnReproducir"
-        app:layout_constraintTop_toBottomOf="@+id/seekBar" />
-
-    <Button
         android:id="@+id/btnParar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="145dp"
+        android:layout_height="48dp"
         android:layout_marginTop="36dp"
         android:layout_marginEnd="41dp"
         android:text="Parar"

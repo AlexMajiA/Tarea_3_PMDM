@@ -22,7 +22,6 @@ public class MainActivity extends AppCompatActivity {
 
     private Button btnGrabar;
     private Button btnReproducir;
-    private Button btnPausa;
     private Button btnParar;
     private Button btnAvanzar;
     private Button btnRetroceder;
@@ -54,7 +53,6 @@ public class MainActivity extends AppCompatActivity {
         btnGrabar = findViewById(R.id.btnGrabar);
         btnReproducir = findViewById(R.id.btnReproducir);
         btnParar = findViewById(R.id.btnParar);
-        btnPausa = findViewById(R.id.btnPausa);
         btnAvanzar = findViewById(R.id.btnAvanzar);
         btnRetroceder = findViewById(R.id.btnRetroceder);
 
@@ -71,13 +69,14 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 if (estaGrabando){
                     pararGrabacion();
-                    btnGrabar.setText("Grabando...");
+                    btnGrabar.setText("Listo para Grabar");
                     btnReproducir.setActivated(true); //Activo reproducción.
                 }else {
                     empezarGrabacion();
-                    btnGrabar.setText("Detenido");
+                    btnGrabar.setText("Grabando...");
                     btnReproducir.setActivated(false); //Desactivo reproducción durante la grabación.
                 }
+
                 estaGrabando = !estaGrabando;
             }
 
@@ -100,8 +99,8 @@ public class MainActivity extends AppCompatActivity {
 
         if (requestCode == 1) { // Este es el código que usamos al pedir permisos
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Si el permiso fue concedido, empezar la grabación
-                empezarGrabacion();
+                Toast.makeText(this, "Permiso concedido", Toast.LENGTH_SHORT).show();
+
             } else {
                 // Si el permiso fue denegado, mostrar un mensaje
                 Toast.makeText(this, "Permiso de grabación de audio no concedido", Toast.LENGTH_SHORT).show();
@@ -110,37 +109,62 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void empezarReproduccion() {
-    mediaPlayer = new MediaPlayer();
-    try{
-        mediaPlayer.prepare();
-        mediaPlayer.start();
-    }catch (IOException e){
+        if (audioFilePath == null || !(new File(audioFilePath).exists())) {
+            Toast.makeText(this, "Archivo no encontrado", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        mediaPlayer = new MediaPlayer();
+
+        try{
+        mediaPlayer.setDataSource(audioFilePath);  // Configurar la ruta del archivo de audio
+        mediaPlayer.prepare(); // Prepara el reproductor
+        mediaPlayer.start(); // Inicia la reproducción
+        }catch (IOException e){
         e.printStackTrace();
-    }
+        }
+        //Configuro un listener para liberar recursos al finalizar
+        mediaPlayer.setOnCompletionListener(mp ->{
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
+        );
 
     }
 
     private void empezarGrabacion() {
         mediaRecorder = new MediaRecorder();
         mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC); //Fuente del micrófono.
-        mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
-        mediaRecorder.setOutputFile(audioFilePath);
-        mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+        mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP); // Formato de salida
+        mediaRecorder.setOutputFile(audioFilePath);  // Ruta del archivo
+        mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB); // Codificador de audio
 
         try {
-            mediaRecorder.prepare();
-            mediaRecorder.start();
+            mediaRecorder.prepare(); // Preparar el grabador
+            mediaRecorder.start(); // Iniciar la grabación
+            Toast.makeText(this,"Grabando audio...", Toast.LENGTH_SHORT).show();
 
         }catch (IOException e){
             e.printStackTrace();
+            Toast.makeText(this, "Error al inicial la grabación", Toast.LENGTH_LONG).show();
         }
 
     }
 
     private void pararGrabacion() {
-        mediaRecorder.stop();
-        mediaRecorder.release();
-        mediaRecorder = null;
+        if (mediaRecorder != null){
+            try {
+                mediaRecorder.stop(); //Detengo la grabación.
+            }catch(RuntimeException e){
+                e.printStackTrace();
+                Toast.makeText(this, "Error al detener la grabación", Toast.LENGTH_LONG).show();
+            }finally {
+                //mediaRecorder.stop();
+                mediaRecorder.release();
+                mediaRecorder = null;
+            }
+        }
+
     }
 
 }
