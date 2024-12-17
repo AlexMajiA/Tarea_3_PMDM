@@ -12,6 +12,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.view.View;
 import android.widget.Button;
+import android.widget.SeekBar;
 import android.widget.Toast;
 import android.widget.VideoView;
 
@@ -25,11 +26,12 @@ public class MainActivity extends AppCompatActivity {
     private Button btnParar;
     private Button btnAvanzar;
     private Button btnRetroceder;
+    private SeekBar seekBar;
     private MediaRecorder mediaRecorder;
     private MediaPlayer mediaPlayer;
     private String audioFilePath; //ruta de almacenamiento del archivo de audio.
 
-
+    private boolean isSeeking = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -85,12 +87,81 @@ public class MainActivity extends AppCompatActivity {
 
         //Configuro la acción del botón Reproducir.
         btnReproducir.setOnClickListener(new View.OnClickListener() {
+            private boolean estaReproduciendo = false;
+
             @Override
             public void onClick(View view) {
-                empezarReproduccion();
+                if (mediaPlayer == null) {
+                    empezarReproduccion();
+                    btnReproducir.setText("Pausar");
+                    estaReproduciendo = true;
+                } else if (estaReproduciendo) {
+                    // Pausar reproducción
+                    pausarReproduccion();
+                    btnReproducir.setText("Reproducir");
+                    estaReproduciendo = false;
+                } else {
+                    // Reanudar reproducción
+                    mediaPlayer.start();
+                    btnReproducir.setText("Pausar");
+                    estaReproduciendo = true;
+                }
             }
         });
 
+        btnParar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                detenerReproduccion();
+                btnReproducir.setText("Reproducir"); // Restablezco el texto del botón Reproducir
+            }
+        });
+
+        btnAvanzar.setOnClickListener(new View.OnClickListener(){
+
+            @Override
+            public void onClick(View view) {
+                if (mediaPlayer != null && mediaPlayer.isPlaying()){
+                    int posicionActual = mediaPlayer.getCurrentPosition();
+                    int duracionTotal = mediaPlayer.getDuration();
+                    int nuevaPosicion = posicionActual + 5000;
+
+                    if (nuevaPosicion > duracionTotal){
+                        nuevaPosicion = duracionTotal;
+                    }
+                    mediaPlayer.seekTo(nuevaPosicion);
+                    Toast.makeText(MainActivity.this,"avance de 5 seg.", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+
+
+        btnRetroceder.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+                    int posicionActual = mediaPlayer.getCurrentPosition();
+                    int nuevaPosicion = posicionActual - 5000; // Retrocede 5 segundos
+
+                    // Evita que la posición sea menor que 0
+                    if (nuevaPosicion < 0) {
+                        nuevaPosicion = 0;
+                    }
+
+                    mediaPlayer.seekTo(nuevaPosicion);
+                    Toast.makeText(MainActivity.this, "Retrocedido 5 seg.", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+
+    }
+
+
+
+    private void pausarReproduccion() {
+        if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+            mediaPlayer.pause();
+        }
     }
 
     @Override
@@ -109,27 +180,56 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void empezarReproduccion() {
+        // Verifica si la ruta del archivo es válida y si existe
         if (audioFilePath == null || !(new File(audioFilePath).exists())) {
-            Toast.makeText(this, "Archivo no encontrado", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Error: Archivo de grabación no encontrado", Toast.LENGTH_LONG).show();
             return;
         }
 
-        mediaPlayer = new MediaPlayer();
+        if (mediaPlayer == null) {
+            mediaPlayer = new MediaPlayer();
 
-        try{
-        mediaPlayer.setDataSource(audioFilePath);  // Configurar la ruta del archivo de audio
-        mediaPlayer.prepare(); // Prepara el reproductor
-        mediaPlayer.start(); // Inicia la reproducción
-        }catch (IOException e){
-        e.printStackTrace();
+            try {
+                mediaPlayer.setDataSource(audioFilePath);  // Configurar la ruta del archivo de audio
+                mediaPlayer.prepare(); // Prepara el reproductor
+                mediaPlayer.start();   // Inicia la reproducción
+
+
+            } catch (IOException e) {
+                // Muestra un mensaje de error específico si falla
+                Toast.makeText(this, "Error al reproducir el archivo de audio", Toast.LENGTH_LONG).show();
+                e.printStackTrace();
+
+                // Libera los recursos del MediaPlayer si hubo un error
+                if (mediaPlayer != null) {
+                    mediaPlayer.release();
+                    mediaPlayer = null;
+                }
+            }
+
+            // Configura un listener para liberar recursos al finalizar la reproducción
+            mediaPlayer.setOnCompletionListener(mp -> {
+                detenerReproduccion();
+                btnReproducir.setText("Reproducir");
+
+            });
+        } else {
+            // Reanuda la reproducción si estaba pausada
+            mediaPlayer.start();
+
         }
-        //Configuro un listener para liberar recursos al finalizar
-        mediaPlayer.setOnCompletionListener(mp ->{
+    }
+
+
+    private void detenerReproduccion() {
+
+        if (mediaPlayer != null) {
+            if (mediaPlayer.isPlaying() || mediaPlayer.isLooping()){
+                mediaPlayer.stop();
+            }
             mediaPlayer.release();
             mediaPlayer = null;
         }
-        );
-
     }
 
     private void empezarGrabacion() {
